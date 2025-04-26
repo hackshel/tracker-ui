@@ -43,7 +43,7 @@
 						<span class="icon-bar"></span>
 						<span class="icon-bar"></span>
 					</button>
-					<a class="navbar-brand" href="/index/"><strong>母版制作中心发布平台</strong></a>
+					<a class="navbar-brand" href="/tasks.shtml"><strong>母版制作中心发布平台</strong></a>
 				</div>
 
 				<!-- /.navbar-header -->
@@ -72,12 +72,12 @@
 							<i class="fa fa-user fa-fw"></i> <i class="fa fa-caret-down"></i>
 						</a>
 						<ul id="drop_list" class="dropdown-menu dropdown-user">
-							<li>
+							<!--<li>
 								<a id="2fa-menu" href="javascript:;"><i class="fa fa-lock fa-fw"></i> 两步验证</a>
-							</li>
-							<li>
+							</li>-->
+							<!--<li>
 								<a href="/admin/password_change/"><i class="fa fa-user fa-fw"></i> 修改密码</a>
-							</li>
+							</li>-->
 							<li>
 								<a id="logout" href="#"><i class="fa fa-gear fa-fw"></i> 退出</a>
 							</li>
@@ -101,10 +101,11 @@
 							<li>
 								<a href="/localstorage"><i class="fa fa-tasks fa-fw"></i> 本地存储<span></span></a>
 							</li>
-							-->
+							
 							<li>
-								<a href="#"><i class="fa fa-sitemap fa-fw"></i> 相关文档</a>
+								<a href="/users.shtml"><i class="fa fa-sitemap fa-fw"></i>用户管理</a>
 							</li>
+						-->
 						</ul>
 					</div>
 					<!-- /.sidebar-collapse -->

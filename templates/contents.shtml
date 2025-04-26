@@ -193,12 +193,17 @@ $(function () {
     html += '</li>';
     html += '<li>';
     html += '<a target="_blank" href="/admin"><i class="fa fa-sitemap fa-fw"></i> 管理后台</a></li>';
+
+    side_html = '<li><a href="/localstorage.shtml"><i class="fa fa-tasks fa-fw"></i>医院管理<span></span></a></li>';
+    side_html += '<li><a href="/users.shtml"><i class="fa fa-sitemap fa-fw"></i>用户管理</a></li>';
+							
     if(JWTStorage.isTokenExpired()){
             JWTStorage.clearToken();
             $(location).attr('href', '/login.shtml');
     }
     if(JWTStorage.is_super()){
-        $('#drop_list').prepend(html)	
+        $('#drop_list').prepend(html);
+        $("#side-menu").append(side_html);
     }
     const username = localStorage.getItem("username");
     console.log(username);

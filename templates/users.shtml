@@ -1,0 +1,446 @@
+<!--#include file="base.shtml" -->
+
+<!-- 自定义操作按钮-->
+<div id="toolbar" class="form-inline pull-left">
+    <div class="form-group">
+
+        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addUserModal">
+            添加用户
+        </button>
+    </div>
+</div>
+<!-- 审核列表的表格-->
+<div class="table-responsive">
+    <table id="disk-dcp-list" data-toggle="table" class="table table-striped table-hover"
+        style="table-layout:inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></table>
+</div>
+
+<!-- 确认模态框 -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">确认删除</h5>
+            </div>
+            <div class="modal-body">
+                确定要删除这个用户吗？此操作不可恢复！
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-danger" id="confirmDelete">确定删除</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- 添加用户模态框 -->
+<!-- Modal -->
+<div class="modal fade" id="addUserModal" tabindex="-1" role="dialog" aria-labelledby="addUserModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addUserModalLabel">添加用户</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- 不需要 form 标签了 -->
+                <div class="form-group">
+                    <label for="username">用户名</label>
+                    <input type="text" class="form-control" id="username" placeholder="请输入用户名">
+                </div>
+
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <input type="password" class="form-control" id="password" name="password" required>
+                </div>
+                <!--
+                <div class="form-group">
+                    <label for="hospital">医院</label>
+                    <select class="form-control" id="hospital">
+                        <option value="">请选择医院</option>
+                        <option value="1">医院1</option>
+                        <option value="2">医院2</option>
+                        <option value="3">医院3</option>
+                    </select>
+                </div>
+                -->
+            </div>
+            <div class="modal-footer">
+                <!-- 按钮改为普通按钮，不是submit -->
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="submitAddUser">提交</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 修改用户信息 Modal -->
+<div class="modal fade" id="modifyUserModal" tabindex="-1" role="dialog" aria-labelledby="modifyUserModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <form id="modifyUserForm">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modifyUserModalLabel">修改用户信息</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="关闭">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <!-- 隐藏域，用来保存 user_id -->
+                    <input type="hidden" id="modifyUserId" name="user_id">
+
+                    <div class="form-group">
+                        <label for="modifyUsername">用户名</label>
+                        <input type="text" class="form-control" id="modifyUsername" name="user_name" readonly>
+                    </div>
+
+
+                    <div class="form-group">
+                        <label for="user_hospital_now">现在归属医院名</label>
+                        <input type="text" class="form-control" id="user_hospital_now" name="user_hospital_now" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="modifyHospital">归属医院</label>
+                        <select class="form-control" id="modifyHospital" name="hospital_code" required>
+                            <!-- 医院列表会动态生成 -->
+                            <option value="">请选择医院</option>
+                            <!-- 示例：
+                <option value="10001">医院A</option>
+                <option value="10002">医院B</option>
+                -->
+                        </select>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="submitModifyUser">保存修改</button>
+                </div>
+
+            </div>
+        </form>
+    </div>
+</div>
+
+<!--#include file="contents.shtml"-->
+<link href="/static/daterangepicker/css/daterangepicker.css" rel="stylesheet" type="text/css" />
+<link href="/static/dist/css/localstorage.css" rel="stylesheet" type="text/css" />
+<script src="/static/daterangepicker/js/moment.min.js"></script>
+<script src="/static/daterangepicker/js/daterangepicker.js"></script>
+<script src="/static/bootstrap-table/js/bootstrap-table-export.min.js"></script>
+<script src="/static/bootstrap-table/js/tableExport.min.js"></script>
+<script>
+
+    //获取用户列表
+    function get_user_list() {
+
+        //采取异步请求
+        //初始化table
+        token = localStorage.getItem("token");
+        $('#disk-dcp-list').bootstrapTable('destroy').bootstrapTable({
+            escape: true,
+            method: 'post',
+            contentType: "application/json",
+            url: "/api/v1/user/list",
+            striped: true,                      //是否显示行间隔色
+            cache: false,                       //是否使用缓存，默认为true，所以一般情况下需要设置一下这个属性（*）
+            pagination: true,                   //是否显示分页（*）
+            sortable: true,                     //是否启用排序
+            sortOrder: "asc",                   //排序方式
+            sidePagination: "server",           //分页方式：client客户端分页，server服务端分页（*）
+            pageNumber: 1,                      //初始化加载第一页，默认第一页,并记录
+            pageSize: 20,                     //每页的记录行数（*）
+            pageList: [20, 30, 50, 100],       //可供选择的每页的行数（*）
+            showExport: true,                   //是否显示导出按钮
+            exportOptions: {
+                fileName: 'sqlworkflow'  //文件名称设置
+            },
+            ajaxOptions: {
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            },
+            search: true,                      //是否显示表格搜索
+            strictSearch: false,                //是否全匹配搜索
+            showColumns: true,                  //是否显示所有的列（选择显示的列）
+            showRefresh: true,                  //是否显示刷新按钮
+            minimumCountColumns: 2,             //最少允许的列数
+            clickToSelect: true,                //是否启用点击选中行
+            uniqueId: "id",                     //每一行的唯一标识，一般为主键列
+            showToggle: true,                   //是否显示详细视图和列表视图的切换按钮
+            cardView: false,                    //是否显示详细视图
+            detailView: false,                  //是否显示父子表
+            locale: 'zh-CN',                    //本地化
+            toolbar: "#toolbar",               //指明自定义的toolbar
+            queryParamsType: 'limit',
+            //请求服务数据时所传参数
+            queryParams:
+                function (params) {
+                    return {
+                        limit: params.limit,
+                        offset: params.offset,
+                        search: params.search,
+                        listwith: 'hospital',
+                    }
+                },
+            columns: [{
+                title: '用户ID',
+                field: 'user_id'
+            }, {
+                title: '用户名',
+                field: 'user_name',
+                formatter: function (value, row, index) {
+                    var span = document.createElement('span');
+                    span.setAttribute('title', value);
+                    span.innerHTML = value;
+                    return span.outerHTML;
+                }
+            },{
+                title: '角色',
+                field: 'role',
+            }, {
+                title:'归属医院',
+                field:'hospital_name',
+            },{
+                title:'医院编码',
+                field: 'hospital_code',
+            },{
+                title: '操作',
+                field: 'operation',
+                formatter: function (value, row, index) {
+                    var div = document.createElement('div');
+                    div.classList.add("m-0", "border-0");
+                    div.innerHTML = "<button class=\"btn btn-info btn-xs mr-1\" workflow_id=\"" + row.user_id + "\"\n" + "onclick=\"modify_user(this)\" >修改\n" + "</button>"
+                    div.innerHTML += "<button class=\"btn btn-info btn-xs mr-1\" workflow_id=\"" + row.user_id + "\"\n" + "onclick=\"delete_user(this)\" >删除\n" + "</button>"
+                    return div.outerHTML;
+                }
+            }],
+            onLoadSuccess: function () {
+            },
+            onLoadError: onLoadErrorCallback,
+            onSearch: function (e) {
+                //传搜索参数给服务器
+                queryParams(e)
+            },
+            responseHandler: function (res) {
+                //在ajax获取到数据，渲染表格之前，修改数据源
+                return res;
+            }
+        });
+
+    }
+
+    let deleteItemId = null;
+    //删除用户
+    function delete_user(elem) {
+        console.log("delete user")
+        console.log(elem);
+        $("#confirmModal").modal('show');
+        deleteItemId = $(elem).attr('workflow_id');
+        console.log(deleteItemId)
+
+    }
+    function confirmDelete() {
+
+        console.log(deleteItemId);
+        $.ajax({
+            url: '/api/v1/user/delete',
+            type: 'POST',
+            contentType: "application/json",
+            dataType: "json",
+            data: JSON.stringify({ "user_id": parseInt(deleteItemId) }),
+            headers: {
+                'Authorization': 'Bearer ' + token,
+            },
+            processData: false, // 防止 jQuery 自动处理
+            contentType: false, // 不设置 contentType
+            success: function (res) {
+                console.log(res);
+                if (res.error_code == 200) {
+
+                    $('#confirmModal').modal('hide'); // 关闭模态框
+                    deleteItemId = null; // 重置ID
+
+                    setTimeout(function () {
+                        location.reload(); // 刷新整个页面
+                    }, 500); // 等待 modal 动画关闭后再刷新
+
+                }
+            },
+            error: function (err) {
+                alert('删除用户失败');
+            }
+        });
+    };
+
+
+    //增加用户，调用起来modal
+    $("#add_user").on("click", function (e) {
+        $('#addUserModal').modal('show');
+    })
+
+    //开始提交增加的用户
+    $("#submitAddUser").on("click", function (event) {
+        console.log("开始提交");
+
+        event.preventDefault(); // 阻止表单默认提交，防止刷新页面
+
+        var username = $('#username').val().trim();
+        var password = $('#password').val().trim();
+        //var hosp_id  = $('#hospital').val();
+
+        // if (!username || !hospital) {
+        //     alert('请填写完整信息');
+        //     return;
+        // }
+
+        token = localStorage.getItem("token");
+
+        $.ajax({
+            url: '/api/v1/user/add',
+            type: 'POST',
+            contentType: 'application/json', 
+            dataType: "json",
+            headers: {
+                'Authorization': 'Bearer ' + token,
+            },
+            data: JSON.stringify({
+                "username": username,
+                "password": password,
+                //"hospital_id": hosp_id
+            }), 
+            success: function (res) {
+                if (res.error_code == 200) {
+                    console.log('提交成功');
+                    $('#addUserModal').modal('hide'); // 成功后关闭modal
+                    // 刷新
+                    setTimeout(function () {
+                            location.reload(); // 刷新整个页面
+                        }, 500); // 等待 modal 动画关闭后再刷新
+                    
+                   //清空modal
+                   $('#username').val('');
+                //    $('#hospital').val('');
+                }
+
+            },
+            error: function (xhr, status, error) {
+                console.error('提交失败', error);
+                alert('提交失败');
+            }
+        });
+
+    });
+
+    function modify_user(elem){
+        
+        var $tr = $(elem).closest('tr');
+        /*
+        tr.find('td').each(function(index, td){
+            var value = $(td).text().trim();
+            console.log('第' + index + '列的值是：', value);
+            if (index == 1){
+                username = value;
+            }
+            
+        })*/
+        var userId = $tr.find('td').eq(0).text().trim();
+        var userName = $tr.find('td').eq(1).text().trim();
+        var hospitalName = $tr.find('td').eq(3).text().trim();
+        var userHospitalCode = $tr.find('td').eq(4).text().trim();
+
+        
+        console.log(userId, userName, hospitalName,userHospitalCode);
+        $('#modifyUserId').val(userId);
+        $('#modifyUsername').val(userName);
+        $('#user_hospital_now').val(hospitalName);
+
+        loadHospitalList(userHospitalCode);
+
+        $("#modifyUserModal").modal('show');
+    }
+
+
+    function loadHospitalList(selectedCode) {
+        var token = localStorage.getItem("token"); // 从 localStorage 取 token
+        $.ajax({
+            url: '/api/v1/hospital/list',
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + token
+            },
+            success: function (hospitals) {
+                var $select = $('#modifyHospital');
+                $select.empty();
+                $select.append('<option value="">请选择医院</option>');
+                hospitals.rows.forEach(function (hospital) {
+                    var selected = hospital.code == selectedCode ? 'selected' : '';
+                    $select.append('<option value="' + hospital.code + '" ' + selected + '>' + hospital.hsp_name + '</option>');
+                });
+            },
+            error: function (xhr, status, error) {
+                console.error("获取医院列表失败:", error);
+            }
+        });
+    }
+
+    
+    $('#submitModifyUser').click(function () {
+        var userId = $('#modifyUserId').val();
+        var hospitalCode = $('#modifyHospital').val();
+        token = localStorage.getItem("token");
+        if (!hospitalCode) {
+            alert("请选择归属医院");
+            return;
+        }
+
+        $.ajax({
+            url: '/api/v1/user/modify',
+            type: 'POST',
+            contentType: 'application/json',
+            headers: {
+                'Authorization': 'Bearer ' + token,
+            },
+            data: JSON.stringify({
+                user_id: parseInt(userId),
+                hospital_code: parseInt(hospitalCode),
+            }),
+            success: function (response) {
+                alert('修改成功');
+                $('#modifyUserModal').modal('hide');
+                $('#modifyUserForm')[0].reset();
+
+                // 可以刷新列表
+                get_user_list();
+            },
+            error: function (xhr, status, error) {
+                console.error('修改失败:', error);
+                alert('修改失败');
+            }
+        });
+    });
+    
+
+
+
+
+    //初始化数据
+    $(document).ready(function () {
+        get_user_list();
+        $('#confirmDelete').click(function () {
+            confirmDelete();
+        });
+       
+
+
+
+    });
+</script>
+<!--#include file="footer.shtml"-->
