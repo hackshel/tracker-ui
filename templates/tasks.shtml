@@ -72,6 +72,27 @@
     </div>
 </div>
 
+<!-- 删除种子文件确认模态框 -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">确认删除</h5>
+                <input id="torrent_info" hidden>
+            </div>
+            <div class="modal-body">
+                确定要删除这个用户吗？此操作不可恢复！
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteTorrent">确定删除</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
 <!--#include file="contents.shtml"-->
 <link href="/static/daterangepicker/css/daterangepicker.css" rel="stylesheet" type="text/css" />
 <script src="/static/daterangepicker/js/moment.min.js"></script>
@@ -218,7 +239,7 @@
                 field: 'filename'
             }, {
                 title: 'DCP SIZE',
-                field: 'dcpsize',
+                field: 'dcp_size',
             }, {
                 title: '类型',
                 field: 'dcp_type',
@@ -248,13 +269,13 @@
             }, {
                 title: '更新时间',
                 field: 'last_action'
-            }, /*{
+            }, {
                     title: '操作',
                     field: 'operation',
                     formatter: function (value, row, index) {
-                        return "<button class=\"btn btn-info btn-xs\" workflow_id=\"" + row.id + "\"\n" + "onclick=\"getLog(this)\" >操作日志\n" + "</button>"
+                        return "<button class=\"btn btn-info btn-xs\" workflow_id=\"" + row.torrent_id + "\"\n" + "onclick=\"delete_torrent(this)\" >删除\n" + "</button>"
                     }
-                }*/],
+            }],
             onLoadSuccess: function () {
             },
             onLoadError: onLoadErrorCallback,
@@ -269,6 +290,50 @@
         });
 
     }
+
+    function delete_torrent(elem){
+        console.log(elem);
+        var torrent_id = $(elem).attr("workflow_id");
+        console.log("torrent id --->", torrent_id)
+        $("#torrent_info").attr("torrent_id", torrent_id);
+        $("#confirmDeleteModal").modal("show");
+        
+    }
+
+    $("#confirmDeleteTorrent").on('click', function(e){
+        console.log("开始删除~")
+        var torrent_id = $("#torrent_info").attr("torrent_id")
+        const token = localStorage.getItem('token');
+        console.log( "begin del torrent id ==>", torrent_id);
+        $.ajax({
+            url: '/api/v1/torrent/delete',
+            type: 'POST',
+            contentType: "application/json",
+            dataType: "json",
+            data: JSON.stringify({ "torrent_id": parseInt(torrent_id) }),
+            headers: {
+                'Authorization': 'Bearer ' + token,
+            },
+            processData: false, // 防止 jQuery 自动处理
+            contentType: false, // 不设置 contentType
+            success: function (res) {
+                console.log(res);
+                if (res.error_code == 200) {
+
+                    $('#confirmDeleteModal').modal('hide'); // 关闭模态框
+                
+
+                    setTimeout(function () {
+                        location.reload(); // 刷新整个页面
+                    }, 500); // 等待 modal 动画关闭后再刷新
+
+                }
+            },
+            error: function (err) {
+                alert('删除用户失败');
+            }
+        });
+    })
 
     // 获取操作日志
     function getLog(obj) {
